@@ -1,0 +1,48 @@
+sudo: false
+dist: trusty
+
+language: rust
+
+cache:
+  cargo: true
+  apt: true
+
+rust:
+  - stable
+  - beta
+  - nightly
+
+matrix:
+  include:
+    - rust: nightly-2018-03-20
+      env: # use env so updating versions causes cache invalidation
+        - CLIPPY_VERSION=0.0.189
+      before_script:
+        - rustup component add rustfmt-preview
+        - cargo install clippy --version $CLIPPY_VERSION || echo "clippy already installed"
+      script:
+        - cargo fmt -- --write-mode=diff
+        - cargo clippy -- -D clippy
+
+addons:
+  apt:
+    sources:
+    packages:
+      # Cargo coverage dependencies
+      - libcurl4-openssl-dev
+      - libelf-dev
+      - libdw-dev
+      - binutils-dev
+  
+install:
+  - cargo install cargo-travis || echo "Cargo travis is already installed!"
+  - export PATH=$HOME/.cargo/bin:$PATH
+
+script:
+  - cargo test --all --verbose
+  # - if [ "$TRAVIS_RUST_VERSION" == "stable" ]; then cargo coveralls --all; fi
+
+after_success: |
+  if [ "$TRAVIS_RUST_VERSION" == "stable" ]; then
+    cargo coveralls --all
+  fi
