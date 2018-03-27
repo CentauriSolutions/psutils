@@ -3,5 +3,8 @@ extern crate psutils;
 use psutils::{ConnType, Connections};
 
 fn main() {
-    Connections::retrieve(&ConnType::Tcp, None);
+    println!(
+        "Connections: {:?}",
+        Connections::retrieve(&ConnType::Tcp, None)
+    );
 }

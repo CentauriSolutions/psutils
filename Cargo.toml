@@ -4,3 +4,6 @@ version = "0.1.0"
 authors = ["Chris MacNaughton <chris@centaurisolutions.nl>"]
 
 [dependencies]
+# hex = "~0.3"
+data-encoding = "~1.2"
+maplit = "~1.0"
