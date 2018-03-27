@@ -193,16 +193,16 @@ impl Connections {
                 p.push(f);
                 p
             };
-            ret = if vec![Socket::AF_INET, Socket::AF_INET6].contains(&family) {
+             if vec![Socket::AF_INET, Socket::AF_INET6].contains(&family) {
                 match _type {
-                    Some(t) => Connections::process_inet(&proc_path, family, &t, &inodes, pid, kind),
+                    Some(t) => ret = Connections::process_inet(&proc_path, family, &t, &inodes, pid, kind),
                     None => {
                         println!("Error with socket types");
                         continue;
                     }
                 }
             } else {
-                unimplemented!()
+                println!("Unix sockets are Unimplemented!");
                 //         ls = self.process_unix(
                 //             "%s/net/%s" % (self._procfs_path, f),
                 //             family, inodes, filter_pid=pid)
@@ -334,7 +334,8 @@ impl Connections {
                         // if let Ok(ip) = vec_to_s(ip, "::").parse() {
                         //     return Some((ip, port))
                         // }
-                        unimplemented!()
+                        // unimplemented!()
+                        println!("IPV6 is Unimplemented!");
                     },
                     _ => unreachable!(),
                 }
