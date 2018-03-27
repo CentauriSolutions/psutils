@@ -197,10 +197,16 @@ impl Connections {
             if vec![Socket::AF_INET, Socket::AF_INET6].contains(&family) {
                 match _type {
                     Some(t) => {
-                        ret = Connections::process_inet(&proc_path, family, &t, &inodes, pid, kind)
+                        ret.append(&mut Connections::process_inet(
+                            &proc_path,
+                            family,
+                            &t,
+                            &inodes,
+                            pid,
+                            kind,
+                        ));
                     }
                     None => {
-                        println!("Error with socket types");
                         continue;
                     }
                 }
@@ -234,7 +240,7 @@ impl Connections {
             let _ = lines.next(); // skip the first line
             for (line_number, line) in lines {
                 if let Ok(line) = line {
-                    let mut split = line.split(' ');
+                    let mut split = line.split_whitespace();
                     if let (
                         _,
                         Some(mut laddr),
@@ -262,7 +268,7 @@ impl Connections {
                     ) {
                         if inodes.contains_key(inode) {
                             let (pid, fd) = inodes[inode][0];
-                            if filter_pid.is_none() || filter_pid != Some(pid) {
+                            if filter_pid.is_some() && filter_pid != Some(pid) {
                                 continue;
                             }
                             let status: Option<State> = if _type == &Socket::SOCK_STREAM {
@@ -283,6 +289,8 @@ impl Connections {
                                     status,
                                     pid,
                                 })
+                            } else {
+                                // println!("Failed to decode");
                             }
                         }
                     } else {
@@ -331,8 +339,8 @@ impl Connections {
                         // if let Ok(ip) = vec_to_s(ip, "::").parse() {
                         //     return Some((ip, port))
                         // }
+
                         // unimplemented!()
-                        println!("IPV6 is Unimplemented!");
                     }
                     _ => unreachable!(),
                 }
@@ -347,9 +355,18 @@ impl Connections {
         let mut path = self.procfs_path.clone();
         path.push(format!("{}", pid));
         path.push("fd");
-        for dirent in read_dir(&path).unwrap() {
-            let dirent = dirent.unwrap();
+        let dirent = read_dir(&path);
+        let dirent = match dirent {
+            Ok(d) => d,
+            Err(_e) => return inodes,
+        };
+        for dir in dirent {
+            if dir.is_err() {
+                continue;
+            }
+            let dirent = dir.unwrap();
             let path = dirent.path();
+            // println!("Path: {}", path.display());
             match read_link(&path) {
                 Ok(l) => {
                     let l = l.to_string_lossy();
@@ -368,7 +385,7 @@ impl Connections {
                     }
                 }
                 Err(_e) => {
-                    // println!("Error: {:?}", e);
+                    // println!("Error readlink: {:?}", _e);
                 }
             }
         }
