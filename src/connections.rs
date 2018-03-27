@@ -397,9 +397,8 @@ impl Connections {
 }
 
 fn vec_to_s(v: &[u8], join_char: &str) -> String {
-    let s = v.iter()
+    v.iter()
         .map(|c| format!("{}", c))
         .collect::<Vec<String>>()
-        .join(join_char);
-    s
+        .join(join_char)
 }
