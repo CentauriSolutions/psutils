@@ -66,18 +66,18 @@ pub struct Target {
 }
 #[derive(Clone, Debug, PartialEq)]
 pub struct Connection {
-    fd: u16,
-    family: Socket,
-    conn_type: ConnType,
-    laddr: Target,
-    raddr: Target,
-    status: Option<State>,
-    pid: u16,
+    pub fd: u16,
+    pub family: Socket,
+    pub conn_type: ConnType,
+    pub laddr: Target,
+    pub raddr: Target,
+    pub status: Option<State>,
+    pub pid: u16,
 }
 
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum State {
+pub enum State {
     CONN_ESTABLISHED,
     CONN_SYN_SENT,
     CONN_SYN_RECV,
@@ -93,7 +93,7 @@ enum State {
 
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Socket {
+pub enum Socket {
     AF_INET,
     AF_INET6,
     AF_UNIX,
@@ -335,6 +335,22 @@ impl Connections {
                             return Some(Target { addr, port });
                         }
                     }
+                    // else:  # IPv6
+                    //     # old version - let's keep it, just in case...
+                    //     # ip = ip.decode('hex')
+                    //     # return socket.inet_ntop(socket.AF_INET6,
+                    //     #          ''.join(ip[i:i+4][::-1] for i in xrange(0, 16, 4)))
+                    //     ip = base64.b16decode(ip)
+                    //     try:
+                    //         # see: https://github.com/giampaolo/psutil/issues/201
+                    //         if LITTLE_ENDIAN:
+                    //             ip = socket.inet_ntop(
+                    //                 socket.AF_INET6,
+                    //                 struct.pack('>4I', *struct.unpack('<4I', ip)))
+                    //         else:
+                    //             ip = socket.inet_ntop(
+                    //                 socket.AF_INET6,
+                    //                 struct.pack('<4I', *struct.unpack('<4I', ip)))
                     Socket::AF_INET6 => {
                         // if let Ok(ip) = vec_to_s(ip, "::").parse() {
                         //     return Some((ip, port))
