@@ -61,8 +61,8 @@ pub enum ConnType {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Target {
-    addr: IpAddr,
-    port: u16,
+    pub addr: IpAddr,
+    pub port: u16,
 }
 #[derive(Clone, Debug, PartialEq)]
 pub struct Connection {
