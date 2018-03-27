@@ -19,7 +19,10 @@ mod tests {
         let input = "0500000A:0016";
         let family = Socket::AF_INET;
 
-        let expected = Target { addr: IpAddr::V4("10.0.0.5".parse::<Ipv4Addr>().unwrap()), port: 22};
+        let expected = Target {
+            addr: IpAddr::V4("10.0.0.5".parse::<Ipv4Addr>().unwrap()),
+            port: 22,
+        };
         assert_eq!(Connections::decode_address(input, &family), Some(expected));
     }
 
@@ -122,48 +125,48 @@ impl Connections {
         let udp4 = ("udp", Socket::AF_INET, Some(Socket::SOCK_DGRAM));
         let udp6 = ("udp6", Socket::AF_INET6, Some(Socket::SOCK_DGRAM));
         let unix = ("unix", Socket::AF_UNIX, None);
-        match kind {
-            &ConnType::All => {
+        match *kind {
+            ConnType::All => {
                 // (tcp4, tcp6, udp4, udp6, unix),
                 vec![tcp4, tcp6, udp4, udp6, unix]
             }
-            &ConnType::Tcp => {
+            ConnType::Tcp => {
                 // (tcp4, tcp6),
                 vec![tcp4, tcp6]
             }
-            &ConnType::Tcp4 => {
+            ConnType::Tcp4 => {
                 // (tcp4,),
                 vec![tcp4]
             }
-            &ConnType::Tcp6 => {
+            ConnType::Tcp6 => {
                 // (tcp6,),
                 vec![tcp6]
             }
-            &ConnType::Udp => {
+            ConnType::Udp => {
                 // (udp4, udp6),
                 vec![udp4, udp6]
             }
-            &ConnType::Udp4 => {
+            ConnType::Udp4 => {
                 // (udp4,),
                 vec![udp4]
             }
-            &ConnType::Udp6 => {
+            ConnType::Udp6 => {
                 // (udp6,),
                 vec![udp6]
             }
-            &ConnType::Unix => {
+            ConnType::Unix => {
                 // (unix,),
                 vec![unix]
             }
-            &ConnType::Inet => {
+            ConnType::Inet => {
                 // (tcp4, tcp6, udp4, udp6),
                 vec![tcp4, tcp6, udp4, udp6]
             }
-            &ConnType::Inet4 => {
+            ConnType::Inet4 => {
                 // (tcp4, udp4),
                 vec![tcp4, udp4]
             }
-            &ConnType::Inet6 => {
+            ConnType::Inet6 => {
                 // (tcp6, udp6),
                 vec![tcp6, udp6]
             }
@@ -193,9 +196,11 @@ impl Connections {
                 p.push(f);
                 p
             };
-             if vec![Socket::AF_INET, Socket::AF_INET6].contains(&family) {
+            if vec![Socket::AF_INET, Socket::AF_INET6].contains(&family) {
                 match _type {
-                    Some(t) => ret = Connections::process_inet(&proc_path, family, &t, &inodes, pid, kind),
+                    Some(t) => {
+                        ret = Connections::process_inet(&proc_path, family, &t, &inodes, pid, kind)
+                    }
                     None => {
                         println!("Error with socket types");
                         continue;
@@ -231,7 +236,7 @@ impl Connections {
             let _ = lines.next(); // skip the first line
             for (line_number, line) in lines {
                 if let Ok(line) = line {
-                    let mut split = line.split(" ");
+                    let mut split = line.split(' ');
                     if let (
                         _,
                         Some(mut laddr),
@@ -263,7 +268,7 @@ impl Connections {
                                 continue;
                             }
                             let status: Option<State> = if _type == &Socket::SOCK_STREAM {
-                                Connections::tcp_statuses().get(status).map(|s| s.clone())
+                                Connections::tcp_statuses().get(status).cloned()
                             } else {
                                 None
                             };
@@ -271,17 +276,15 @@ impl Connections {
                                 Connections::decode_address(raddr, &family),
                                 Connections::decode_address(laddr, &family),
                             ) {
-                                connections.push(
-                                    Connection {
-                                        fd,
-                                        family,
-                                        conn_type: *kind,
-                                        laddr,
-                                        raddr,
-                                        status,
-                                        pid,
-                                    }
-                                )
+                                connections.push(Connection {
+                                    fd,
+                                    family,
+                                    conn_type: *kind,
+                                    laddr,
+                                    raddr,
+                                    status,
+                                    pid,
+                                })
                             }
                         }
                     } else {
@@ -313,30 +316,30 @@ impl Connections {
         let mut split = addr.split(':');
         if let (Some(ip), Some(port)) = (split.next(), split.next()) {
             println!("Starting port: {}", port);
-            let port: u16 = match u16::from_str_radix(&port, 16) {
+            let port: u16 = match u16::from_str_radix(port, 16) {
                 Ok(p) => p,
                 Err(_) => return None,
             };
             println!("Bytes: {:?}", ip);
 
             if let Ok(mut ip) = data_encoding::base16::decode(ip.as_bytes()) {
-                match family {
-                    &Socket::AF_INET => {
+                match *family {
+                    Socket::AF_INET => {
                         ip.reverse();
                         println!("Encoded: {:?}", ip);
-                        let ip: String = vec_to_s(ip, ".");
+                        let ip: String = vec_to_s(&ip, ".");
                         println!("Stringed: {:?}", ip);
                         if let Ok(addr) = ip.parse() {
-                            return Some(Target {addr, port});
+                            return Some(Target { addr, port });
                         }
                     }
-                    &Socket::AF_INET6 => {
+                    Socket::AF_INET6 => {
                         // if let Ok(ip) = vec_to_s(ip, "::").parse() {
                         //     return Some((ip, port))
                         // }
                         // unimplemented!()
                         println!("IPV6 is Unimplemented!");
-                    },
+                    }
                     _ => unreachable!(),
                 }
             }
@@ -407,7 +410,7 @@ impl Connections {
     }
 }
 
-fn vec_to_s(v: Vec<u8>, join_char: &str) -> String {
+fn vec_to_s(v: &[u8], join_char: &str) -> String {
     let s = v.iter()
         .map(|c| format!("{}", c))
         .collect::<Vec<String>>()
