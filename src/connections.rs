@@ -179,7 +179,6 @@ impl Connections {
         let inodes = match pid {
             Some(pid) => {
                 let i = connection.get_proc_inodes(pid);
-                println!("proc inodes: {:?}", i);
                 if i.is_empty() {
                     return vec![];
                 }
@@ -187,7 +186,6 @@ impl Connections {
             }
             None => connection.get_all_inodes(),
         };
-        println!("Inodes: {:?}", inodes);
         let mut ret = Vec::new();
         for (f, family, _type) in Connections::types(kind) {
             let proc_path = {
@@ -315,20 +313,16 @@ impl Connections {
     fn decode_address(addr: &str, family: &Socket) -> Option<Target> {
         let mut split = addr.split(':');
         if let (Some(ip), Some(port)) = (split.next(), split.next()) {
-            println!("Starting port: {}", port);
             let port: u16 = match u16::from_str_radix(port, 16) {
                 Ok(p) => p,
                 Err(_) => return None,
             };
-            println!("Bytes: {:?}", ip);
 
             if let Ok(mut ip) = data_encoding::base16::decode(ip.as_bytes()) {
                 match *family {
                     Socket::AF_INET => {
                         ip.reverse();
-                        println!("Encoded: {:?}", ip);
                         let ip: String = vec_to_s(&ip, ".");
-                        println!("Stringed: {:?}", ip);
                         if let Ok(addr) = ip.parse() {
                             return Some(Target { addr, port });
                         }
@@ -355,21 +349,13 @@ impl Connections {
         path.push("fd");
         for dirent in read_dir(&path).unwrap() {
             let dirent = dirent.unwrap();
-            println!("dirent: {:?}", dirent);
             let path = dirent.path();
             match read_link(&path) {
                 Ok(l) => {
                     let l = l.to_string_lossy();
-                    println!(
-                        "Link: {} -> {:?} (socket: [{}])",
-                        path.display(),
-                        l,
-                        l.starts_with("socket:[")
-                    );
                     if l.starts_with("socket:[") {
                         let mut inode: String = l[8..].into();
                         inode.pop();
-                        println!("About to push inode: {}", inode);
                         let entry = inodes.entry(inode).or_insert_with(|| vec![]);
                         entry.push((
                             pid,
@@ -415,6 +401,5 @@ fn vec_to_s(v: &[u8], join_char: &str) -> String {
         .map(|c| format!("{}", c))
         .collect::<Vec<String>>()
         .join(join_char);
-    println!("s: {:?}", s);
     s
 }
