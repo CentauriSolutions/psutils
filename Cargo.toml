@@ -6,4 +6,5 @@ authors = ["Chris MacNaughton <chris@centaurisolutions.nl>"]
 [dependencies]
 # hex = "~0.3"
 data-encoding = "~1.2"
+log = "~0.3"
 maplit = "~1.0"

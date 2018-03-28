@@ -211,7 +211,7 @@ impl Connections {
                     }
                 }
             } else {
-                println!("Unix sockets are Unimplemented!");
+                debug!("Unix sockets are Unimplemented!");
                 //         ls = self.process_unix(
                 //             "%s/net/%s" % (self._procfs_path, f),
                 //             family, inodes, filter_pid=pid)
@@ -234,75 +234,78 @@ impl Connections {
             // IPV6 is not supported by the machine
             return connections;
         }
-        if let Ok(f) = File::open(file) {
-            let f = BufReader::new(&f);
-            let mut lines = f.lines().enumerate();
-            let _ = lines.next(); // skip the first line
-            for (line_number, line) in lines {
-                if let Ok(line) = line {
-                    let mut split = line.split_whitespace();
-                    if let (
-                        _,
-                        Some(mut laddr),
-                        Some(mut raddr),
-                        Some(status),
-                        _,
-                        _,
-                        _,
-                        _,
-                        _,
-                        Some(inode),
-                        _,
-                    ) = (
-                        split.next(),
-                        split.next(),
-                        split.next(),
-                        split.next(),
-                        split.next(),
-                        split.next(),
-                        split.next(),
-                        split.next(),
-                        split.next(),
-                        split.next(),
-                        split.next(),
-                    ) {
-                        if inodes.contains_key(inode) {
-                            let (pid, fd) = inodes[inode][0];
-                            if filter_pid.is_some() && filter_pid != Some(pid) {
-                                continue;
+        match File::open(file) {
+            Ok(f) => {
+                let f = BufReader::new(&f);
+                let mut lines = f.lines().enumerate();
+                let _ = lines.next(); // skip the first line
+                for (line_number, line) in lines {
+                    if let Ok(line) = line {
+                        let mut split = line.split_whitespace();
+                        if let (
+                            _,
+                            Some(mut laddr),
+                            Some(mut raddr),
+                            Some(status),
+                            _,
+                            _,
+                            _,
+                            _,
+                            _,
+                            Some(inode),
+                            _,
+                        ) = (
+                            split.next(),
+                            split.next(),
+                            split.next(),
+                            split.next(),
+                            split.next(),
+                            split.next(),
+                            split.next(),
+                            split.next(),
+                            split.next(),
+                            split.next(),
+                            split.next(),
+                        ) {
+                            if inodes.contains_key(inode) {
+                                let (pid, fd) = inodes[inode][0];
+                                if filter_pid.is_some() && filter_pid != Some(pid) {
+                                    continue;
+                                }
+                                let status: Option<State> = if _type == &Socket::SOCK_STREAM {
+                                    Connections::tcp_statuses().get(status).cloned()
+                                } else {
+                                    None
+                                };
+                                if let (Some(raddr), Some(laddr)) = (
+                                    Connections::decode_address(raddr, &family),
+                                    Connections::decode_address(laddr, &family),
+                                ) {
+                                    connections.push(Connection {
+                                        fd,
+                                        family,
+                                        conn_type: *kind,
+                                        laddr,
+                                        raddr,
+                                        status,
+                                        pid,
+                                    })
+                                } else {
+                                    // debug!("Failed to decode");
+                                }
                             }
-                            let status: Option<State> = if _type == &Socket::SOCK_STREAM {
-                                Connections::tcp_statuses().get(status).cloned()
-                            } else {
-                                None
-                            };
-                            if let (Some(raddr), Some(laddr)) = (
-                                Connections::decode_address(raddr, &family),
-                                Connections::decode_address(laddr, &family),
-                            ) {
-                                connections.push(Connection {
-                                    fd,
-                                    family,
-                                    conn_type: *kind,
-                                    laddr,
-                                    raddr,
-                                    status,
-                                    pid,
-                                })
-                            } else {
-                                // println!("Failed to decode");
-                            }
+                        } else {
+                            debug!(
+                                "Error while parsing {}; malformed line {} {}",
+                                file.display(),
+                                line_number,
+                                line
+                            );
                         }
-                    } else {
-                        println!(
-                            "Error while parsing {}; malformed line {} {}",
-                            file.display(),
-                            line_number,
-                            line
-                        );
                     }
                 }
             }
+            Err(e) => debug!("Error opening {}: {:?}", file.display(), e),
         };
         connections
     }
@@ -382,7 +385,7 @@ impl Connections {
             }
             let dirent = dir.unwrap();
             let path = dirent.path();
-            // println!("Path: {}", path.display());
+            // debug!("Path: {}", path.display());
             match read_link(&path) {
                 Ok(l) => {
                     let l = l.to_string_lossy();
@@ -401,7 +404,7 @@ impl Connections {
                     }
                 }
                 Err(_e) => {
-                    // println!("Error readlink: {:?}", _e);
+                    // debug!("Error readlink: {:?}", _e);
                 }
             }
         }
