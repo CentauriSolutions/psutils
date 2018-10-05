@@ -4,7 +4,9 @@ use psutils::{ConnType, Connections};
 
 fn main() {
     println!(
-        "Connections: {:?}",
-        Connections::retrieve(&ConnType::Tcp, None)
+        "Connections:"
     );
+    for connection in Connections::retrieve(&ConnType::Tcp, None) {
+        println!("{:?}", connection);
+    }
 }
