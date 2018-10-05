@@ -14,15 +14,13 @@ rust:
 
 matrix:
   include:
-    - rust: nightly-2018-03-20
-      env: # use env so updating versions causes cache invalidation
-        - CLIPPY_VERSION=0.0.189
+    - rust: stable
       before_script:
         - rustup component add rustfmt-preview
-        - cargo install clippy --version $CLIPPY_VERSION || echo "clippy already installed"
+        - rustup component add clippy-preview
       script:
-        - cargo fmt -- --write-mode=diff
-        - cargo clippy -- -D clippy
+        - cargo fmt -- --check
+        - cargo clippy
 
 addons:
   apt:
@@ -33,7 +31,7 @@ addons:
       - libelf-dev
       - libdw-dev
       - binutils-dev
-  
+
 install:
   - cargo install cargo-travis || echo "Cargo travis is already installed!"
   - export PATH=$HOME/.cargo/bin:$PATH

@@ -6,5 +6,7 @@ extern crate log;
 extern crate maplit;
 
 mod connections;
+pub mod cpu;
 
 pub use connections::{ConnType, Connections};
+pub use cpu::CpuTime;

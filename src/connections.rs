@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::fs::{read_dir, read_link, File};
 use std::io::{BufRead, BufReader};
-use std::path::{Path, PathBuf};
 use std::net::IpAddr;
+use std::path::{Path, PathBuf};
 use std::u16;
 
 use data_encoding;
@@ -23,7 +23,7 @@ mod tests {
             addr: IpAddr::V4("10.0.0.5".parse::<Ipv4Addr>().unwrap()),
             port: 22,
         };
-        assert_eq!(Connections::decode_address(input, &family), Some(expected));
+        assert_eq!(Connections::decode_address(input, family), Some(expected));
     }
 
     #[ignore]
@@ -36,7 +36,7 @@ mod tests {
             addr: IpAddr::V6("::ffff:127.0.0.1".parse::<Ipv6Addr>().unwrap()),
             port: 40521,
         };
-        assert_eq!(Connections::decode_address(input, &family), Some(expected));
+        assert_eq!(Connections::decode_address(input, family), Some(expected));
     }
 }
 
@@ -119,13 +119,13 @@ impl Connections {
         }
     }
 
-    fn types(kind: &ConnType) -> Vec<(&'static str, Socket, Option<Socket>)> {
+    fn types(kind: ConnType) -> Vec<(&'static str, Socket, Option<Socket>)> {
         let tcp4 = ("tcp", Socket::AF_INET, Some(Socket::SOCK_STREAM));
         let tcp6 = ("tcp6", Socket::AF_INET6, Some(Socket::SOCK_STREAM));
         let udp4 = ("udp", Socket::AF_INET, Some(Socket::SOCK_DGRAM));
         let udp6 = ("udp6", Socket::AF_INET6, Some(Socket::SOCK_DGRAM));
         let unix = ("unix", Socket::AF_UNIX, None);
-        match *kind {
+        match kind {
             ConnType::All => {
                 // (tcp4, tcp6, udp4, udp6, unix),
                 vec![tcp4, tcp6, udp4, udp6, unix]
@@ -173,7 +173,7 @@ impl Connections {
         }
     }
 
-    pub fn retrieve(kind: &ConnType, pid: Option<u16>) -> Vec<Connection> {
+    pub fn retrieve(kind: ConnType, pid: Option<u16>) -> Vec<Connection> {
         let procfs_path = PathBuf::from("/proc");
         let connection = Connections { procfs_path };
         let inodes = match pid {
@@ -198,12 +198,7 @@ impl Connections {
                 match _type {
                     Some(t) => {
                         ret.append(&mut Connections::process_inet(
-                            &proc_path,
-                            family,
-                            &t,
-                            &inodes,
-                            pid,
-                            kind,
+                            &proc_path, family, t, &inodes, pid, kind,
                         ));
                     }
                     None => {
@@ -223,10 +218,10 @@ impl Connections {
     fn process_inet<P: AsRef<Path>>(
         file: &P,
         family: Socket,
-        _type: &Socket,
+        _type: Socket,
         inodes: &HashMap<String, Vec<(u16, u16)>>,
         filter_pid: Option<u16>,
-        kind: &ConnType,
+        kind: ConnType,
     ) -> Vec<Connection> {
         let mut connections = vec![];
         let file = file.as_ref();
@@ -272,19 +267,19 @@ impl Connections {
                                 if filter_pid.is_some() && filter_pid != Some(pid) {
                                     continue;
                                 }
-                                let status: Option<State> = if _type == &Socket::SOCK_STREAM {
+                                let status: Option<State> = if _type == Socket::SOCK_STREAM {
                                     Connections::tcp_statuses().get(status).cloned()
                                 } else {
                                     None
                                 };
                                 if let (Some(raddr), Some(laddr)) = (
-                                    Connections::decode_address(raddr, &family),
-                                    Connections::decode_address(laddr, &family),
+                                    Connections::decode_address(raddr, family),
+                                    Connections::decode_address(laddr, family),
                                 ) {
                                     connections.push(Connection {
                                         fd,
                                         family,
-                                        conn_type: *kind,
+                                        conn_type: kind,
                                         laddr,
                                         raddr,
                                         status,
@@ -321,7 +316,7 @@ impl Connections {
     /// The port is represented as a two-byte hexadecimal number.
     /// Reference:
     /// http://linuxdevcenter.com/pub/a/linux/2000/11/16/LinuxAdmin.html
-    fn decode_address(addr: &str, family: &Socket) -> Option<Target> {
+    fn decode_address(addr: &str, family: Socket) -> Option<Target> {
         let mut split = addr.split(':');
         if let (Some(ip), Some(port)) = (split.next(), split.next()) {
             let port: u16 = match u16::from_str_radix(port, 16) {
@@ -330,7 +325,7 @@ impl Connections {
             };
 
             if let Ok(mut ip) = data_encoding::base16::decode(ip.as_bytes()) {
-                match *family {
+                match family {
                     Socket::AF_INET => {
                         ip.reverse();
                         let ip: String = vec_to_s(&ip, ".");
