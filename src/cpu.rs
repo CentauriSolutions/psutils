@@ -89,12 +89,12 @@ pub fn times() -> Option<CpuTime> {
             let f = BufReader::new(&f);
             let mut lines = f.lines();
             if let Some(Ok(line)) = lines.next() {
-                return CpuTime::decode(&line)
+                return CpuTime::decode(&line);
             }
         }
         Err(e) => debug!("Error opening {}: {:?}", STAT_FILE, e),
     }
-    return None
+    return None;
 }
 
 pub fn cpu_time() -> Vec<CpuTime> {
@@ -107,16 +107,14 @@ pub fn cpu_time() -> Vec<CpuTime> {
             for (line_number, line) in lines {
                 if let Ok(line) = line {
                     if &line[0..=2] != "cpu" {
-                        break
+                        break;
                     }
                     match CpuTime::decode(&line) {
                         Some(c) => times.push(c),
                         None => debug!(
-                                "Error while parsing {}; malformed line {} {}",
-                                STAT_FILE,
-                                line_number,
-                                line
-                                )
+                            "Error while parsing {}; malformed line {} {}",
+                            STAT_FILE, line_number, line
+                        ),
                     }
                 }
             }
@@ -125,4 +123,3 @@ pub fn cpu_time() -> Vec<CpuTime> {
     }
     times
 }
-

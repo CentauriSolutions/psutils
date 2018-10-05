@@ -3,9 +3,7 @@ extern crate psutils;
 use psutils::cpu;
 
 fn main() {
-    println!(
-        "CPU Time:"
-    );
+    println!("CPU Time:");
 
     println!("{:?}", cpu::times().unwrap());
 

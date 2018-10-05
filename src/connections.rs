@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::fs::{read_dir, read_link, File};
 use std::io::{BufRead, BufReader};
-use std::path::{Path, PathBuf};
 use std::net::IpAddr;
+use std::path::{Path, PathBuf};
 use std::u16;
 
 use data_encoding;
@@ -198,12 +198,7 @@ impl Connections {
                 match _type {
                     Some(t) => {
                         ret.append(&mut Connections::process_inet(
-                            &proc_path,
-                            family,
-                            &t,
-                            &inodes,
-                            pid,
-                            kind,
+                            &proc_path, family, &t, &inodes, pid, kind,
                         ));
                     }
                     None => {
