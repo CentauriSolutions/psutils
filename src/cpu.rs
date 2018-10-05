@@ -1,7 +1,7 @@
-use std::fs::{read_dir, read_link, File};
+use std::fs::File;
 use std::io::{BufRead, BufReader};
 
-const STAT_FILE: &'static str = "/proc/stat";
+const STAT_FILE: &str = "/proc/stat";
 
 #[cfg(test)]
 mod tests {
@@ -94,7 +94,7 @@ pub fn times() -> Option<CpuTime> {
         }
         Err(e) => debug!("Error opening {}: {:?}", STAT_FILE, e),
     }
-    return None;
+    None
 }
 
 pub fn cpu_time() -> Vec<CpuTime> {
