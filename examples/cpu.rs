@@ -1,6 +1,6 @@
 extern crate psutils;
 
-use psutils::cpu;
+use psutils::system::cpu;
 
 fn main() {
     println!("CPU Time:");
